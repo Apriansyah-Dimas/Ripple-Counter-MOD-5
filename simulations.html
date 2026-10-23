@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulasi Ripple Counter MOD-5</title>
+<style>
+:root{--paper:#f5f8fb;--ink:#173042;--soft:#5b7180;--on:#0aa57b;--off:#91a5b4;--red:#e04c56;--border:#d6e2e9;--panel:#fff}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font:15px system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:#eff4f7;color:var(--ink)}
+main{height:100vh;height:100dvh;max-width:1500px;margin:auto;padding:10px;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:9px}
+.top,.schematic-area,.bottom{border:1px solid var(--border);border-radius:12px;background:var(--panel);box-shadow:0 2px 8px #23425a08;min-width:0}
+.top{padding:9px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.summary,.btn-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.metric{font-weight:730;font-size:15px;white-space:nowrap}.metric b{color:#078873}.count{border-left:1px solid var(--border);padding-left:14px;display:flex;align-items:baseline;gap:6px}.count strong{font:800 29px ui-monospace,Consolas,monospace;letter-spacing:.08em;color:#086d69}.count small{font-weight:750;color:#657d8b}.count span{font-size:13px;color:var(--soft)}
+button{border:1px solid #c9dbe2;border-radius:8px;background:#fff;color:#294456;font-size:13px;font-weight:750;padding:9px 14px;cursor:pointer;white-space:nowrap}button.primary{background:#087f78;border-color:#087f78;color:white}button:hover{filter:brightness(.97)}button:disabled{opacity:.55;cursor:wait}
+.schematic-area{overflow:hidden;padding:8px;display:flex;justify-content:center;align-items:center;background-color:#fff;background-image:radial-gradient(#cddce577 .8px,transparent .8px);background-size:19px 19px}
+#circuit{display:block;width:100%;height:100%;max-height:650px}#circuit text{font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;user-select:none}
+.ff{fill:#fff;stroke:#385066;stroke-width:2.6}.ff-label{fill:var(--ink);font-weight:780;font-size:19px}.pinname{fill:#496171;font-size:15px;font-weight:750}.tiny{fill:#748896;font-size:13px;font-weight:650}.logic{fill:#079270;font-size:15px;font-weight:800}.vcc{stroke:#0aa57b;stroke-width:2.8;fill:none}.cable{stroke:var(--off);stroke-width:4.1;stroke-linejoin:round;stroke-linecap:round;fill:none;transition:stroke .08s}.cable.on{stroke:var(--on)}.cable.low{stroke:var(--red)}.cable.clocking{stroke:#f59d25}.junction{fill:var(--ink)}.pin{stroke:#385066;stroke-width:2;fill:none}.pulse-label{font-size:17px;font-weight:800;fill:#155d79}.nand-box{fill:#fff7e9;stroke:#eacb96;stroke-width:1.4}.nand{fill:#fff;stroke:#8c621f;stroke-width:2.8}.state-num{fill:#516b7b;font-weight:900;font-size:47px}.state-num.on{fill:#0aa57b}.state-num.low{fill:var(--red)}.state-label{fill:#648090;font-weight:750;font-size:13px}.status-pane{fill:#edf7f5;stroke:#cae8df;stroke-width:1.4}
+.bottom{padding:9px 12px;display:grid;grid-template-columns:minmax(210px,1fr) minmax(370px,1.9fr);gap:12px;align-items:center}.note{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.note #message{font-weight:750;font-size:13px;line-height:1.45}.note small{color:var(--soft);font-size:12px}.legend{display:flex;gap:12px;color:#647987;font-size:11px;margin-top:7px;flex-wrap:wrap}.legend em{display:inline-block;width:13px;height:4px;vertical-align:middle;margin-right:3px;background:var(--on);border-radius:5px}.legend em.grey{background:var(--off)}.legend em.red{background:var(--red)}
+#wave{display:block;width:100%;height:94px}.bitrun{font:750 14px ui-monospace,monospace;letter-spacing:.03em;color:#567282;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bitrun strong{color:#087d76}
+@media(max-width:850px){main{padding:6px;gap:5px;grid-template-rows:auto minmax(0,1fr) auto}.top{padding:6px;gap:5px}.metric{font-size:12px}.count strong{font-size:23px}button{padding:7px 9px;font-size:12px}.bottom{grid-template-columns:1fr;padding:6px;gap:4px}#wave{height:70px}.legend{margin-top:2px}.note #message{font-size:12px}}
+@media(max-height:570px){main{padding:5px;gap:4px}.top,.bottom{padding:5px 10px}.bottom{grid-template-columns:1fr 1.9fr}#wave{height:59px}.count strong{font-size:23px}.legend{margin-top:2px}}
+</style>
+</head>
+<body>
+<main>
+ <div class="top">
+  <div class="summary">
+   <div class="metric">10 kHz <span style="color:#8aa2ad">→</span> <b>2 kHz</b> <small style="color:#6a8291">(÷5)</small></div>
+   <div class="count"><span>Q₂Q₁Q₀</span><strong id="binary">000</strong><small id="decimal">(0)</small></div>
+   <div class="metric" style="color:#5f7786">Clock <span id="pulseCount">0</span></div>
+  </div>
+  <div class="btn-row">
+   <button class="primary" id="step">⚡ 1 pulsa</button>
+   <button id="auto">▶ Otomatis</button>
+   <button id="reset">↺ Reset 000</button>
+  </div>
+ </div>
+ <div class="schematic-area">
+ <svg id="circuit" viewBox="0 0 1200 510" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Sirkuit tiga JK flip-flop dengan semua J dan K HIGH, clock 10 kHz, dua input NAND berasal dari Q2 dan Q0, output NAND mengaktifkan clear ketiga flip flop dan hasil output Q2 menjadi 2 kHz.">
+  <defs><marker id="outputArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10Z" fill="#16a085"/></marker></defs>
+  <!-- Explicit input sources: green logic-1 stubs (power net +5V), trigger low-edge. -->
+  <g class="vcc">
+   <path d="M177 140 H210 M177 255 H210 M487 140 H520 M487 255 H520 M797 140 H830 M797 255 H830"/>
+   <path d="M278 80 V99 M588 80 V99 M898 80 V99"/>
+  </g>
+  <g class="logic" text-anchor="end">
+   <text x="170" y="145">1 (+5 V)</text><text x="170" y="260">1</text>
+   <text x="480" y="145">1 (+5 V)</text><text x="480" y="260">1</text>
+   <text x="790" y="145">1 (+5 V)</text><text x="790" y="260">1</text>
+  </g>
+  <g class="logic" text-anchor="middle"><text x="278" y="69">PRE̅ = 1</text><text x="588" y="69">PRE̅ = 1</text><text x="898" y="69">PRE̅ = 1</text></g>
+  <!-- Three real JK functional symbols; Q outputs only, to avoid confusion with inverted Qbar. -->
+  <g transform="translate(210 99)">
+   <rect class="ff" width="148" height="184" rx="8"/>
+   <text x="74" y="25" text-anchor="middle" class="ff-label">FF0 · U1A</text>
+   <text x="14" y="45" class="pinname">J</text><text x="14" y="160" class="pinname">K</text>
+   <text x="17" y="106" class="pinname">CLK ↓</text>
+   <text x="126" y="65" class="pinname">Q₀</text>
+   <path d="M0 98 l11 7 -11 7" class="pin"/><circle cx="-6" cy="105" r="4" fill="#fff" stroke="#385066" stroke-width="2"/>
+   <text x="75" y="130" text-anchor="middle" class="state-num" id="q0">0</text>
+   <text x="74" y="179" text-anchor="middle" class="state-label">CLR̅ ↓</text>
+  </g>
+  <g transform="translate(520 99)">
+   <rect class="ff" width="148" height="184" rx="8"/>
+   <text x="74" y="25" text-anchor="middle" class="ff-label">FF1 · U1B</text>
+   <text x="14" y="45" class="pinname">J</text><text x="14" y="160" class="pinname">K</text>
+   <text x="17" y="106" class="pinname">CLK ↓</text><text x="126" y="65" class="pinname">Q₁</text>
+   <path d="M0 98 l11 7 -11 7" class="pin"/><circle cx="-6" cy="105" r="4" fill="#fff" stroke="#385066" stroke-width="2"/>
+   <text x="75" y="130" text-anchor="middle" class="state-num" id="q1">0</text>
+   <text x="74" y="179" text-anchor="middle" class="state-label">CLR̅ ↓</text>
+  </g>
+  <g transform="translate(830 99)">
+   <rect class="ff" width="148" height="184" rx="8"/>
+   <text x="74" y="25" text-anchor="middle" class="ff-label">FF2 · U2A</text>
+   <text x="14" y="45" class="pinname">J</text><text x="14" y="160" class="pinname">K</text>
+   <text x="17" y="106" class="pinname">CLK ↓</text><text x="126" y="65" class="pinname">Q₂</text>
+   <path d="M0 98 l11 7 -11 7" class="pin"/><circle cx="-6" cy="105" r="4" fill="#fff" stroke="#385066" stroke-width="2"/>
+   <text x="75" y="130" text-anchor="middle" class="state-num" id="q2">0</text>
+   <text x="74" y="179" text-anchor="middle" class="state-label">CLR̅ ↓</text>
+  </g>
+  <!-- Physical signal lines, no virtual disconnected net labels. -->
+  <path class="cable" id="clkWire" d="M21 204 H204"/>
+  <text x="21" y="186" class="pulse-label">CLOCK</text><text x="21" y="227" class="tiny">10 kHz ↓</text>
+  <path class="cable" id="netQ0" d="M358 164 H403 V204 H514"/>
+  <path class="cable" id="netQ1" d="M668 164 H713 V204 H824"/>
+  <path class="cable" id="netQ2" d="M978 164 H1181"/>
+  <circle class="junction" cx="403" cy="164" r="4"/><circle class="junction" cx="713" cy="164" r="4"/>
+  <circle class="junction" cx="1098" cy="164" r="4"/>
+  <text x="1113" y="140" text-anchor="middle" fill="#087d70" font-size="18" font-weight="850">2 kHz</text>
+  <path d="M1135 164 H1180" fill="none" stroke="#16a085" stroke-width="2" marker-end="url(#outputArrow)"/>
+  <rect x="997" y="351" width="130" height="85" rx="10" class="nand-box"/>
+  <!-- Distinct wire Q2 directly into NAND A (no crossings). -->
+  <path class="cable" id="nandInputQ2" d="M1098 164 V316 H995 V374 H1021"/>
+  <text x="1013" y="332" class="tiny">Q₂</text>
+  <!-- Q0 crosses CLEAR vertical branches, using rounded jump-bridges so crossings are not junctions. -->
+  <path class="cable" id="nandInputQ0" d="M390 164 V349 H573 Q588 327 603 349 H883 Q898 327 913 349 H981 V408 H1021"/>
+  <text x="962" y="343" class="tiny">Q₀</text>
+  <circle class="junction" cx="390" cy="164" r="4"/>
+  <!-- NAND symbol and logic output -->
+  <path d="M1021 358 H1049 A33 33 0 0 1 1049 424 H1021 Z" class="nand"/>
+  <circle cx="1083" cy="391" r="5" fill="#fff" stroke="#8c621f" stroke-width="2.8"/>
+  <text x="1061" y="347" text-anchor="middle" font-size="17" font-weight="840" fill="#976b25">NAND</text>
+  <text x="1061" y="452" text-anchor="middle" class="tiny">U3A · 74HC00</text>
+  <path class="cable" id="netNand" d="M1088 391 H1157 V465"/>
+  <text x="1163" y="403" class="tiny">Y</text>
+  <!-- Actual shared CLEAR wire (output NAND physically connected to every CLR pin). -->
+  <path class="cable" id="clearBus" d="M278 283 V465 H1157 M588 283 V465 M898 283 V465"/>
+  <circle class="junction" cx="278" cy="465" r="5"/><circle class="junction" cx="588" cy="465" r="5"/><circle class="junction" cx="898" cy="465" r="5"/><circle class="junction" cx="1157" cy="465" r="5"/>
+  <text x="580" y="493" text-anchor="middle" font-size="16" font-weight="800" fill="#9a515b">CLR̅ bersama → Q₂Q₁Q₀ = 000 saat NAND = 0</text>
+  <rect class="status-pane" x="17" y="323" width="220" height="88" rx="11"/>
+  <text x="35" y="348" font-size="15" font-weight="800" fill="#3e6674">Q₂ = <tspan id="nandA">0</tspan>, Q₀ = <tspan id="nandB">0</tspan></text>
+  <text x="35" y="384" font-size="21" font-weight="900" fill="#0e7a72">NAND = <tspan id="nandOut">1</tspan></text>
+ </svg>
+ </div>
+ <div class="bottom">
+   <div>
+    <div class="note"><span id="message" aria-live="polite">Mulai di 000. Tekan 1 pulsa.</span></div>
+    <div class="legend"><span><em></em>HIGH (1)</span><span><em class="grey"></em>LOW (0)</span><span><em class="red"></em>Reset aktif</span></div>
+    <div class="bitrun" id="trail">000</div>
+   </div>
+   <svg id="wave" role="img" aria-label="Riwayat sinyal clock, Q0, Q1, dan Q2"></svg>
+ </div>
+</main>
+<script>
+(()=>{
+ 'use strict';
+ const $=x=>document.getElementById(x);
+ const s={q:[0,0,0],pulse:0,history:[0],busy:false,run:false,autotimer:null,runid:0,flash:false};
+ const bits=()=>s.q[2]+''+s.q[1]+s.q[0];
+ const val=()=>s.q[0]+s.q[1]*2+s.q[2]*4;
+ const delay=n=>new Promise(r=>setTimeout(r,n));
+ const pulseButton=$('step'),autoButton=$('auto');
+ function color(id,value,mode){let e=$(id);e.classList.toggle('on',value===1);e.classList.toggle('low',mode==='reset');}
+ function paint(){
+   $('binary').textContent=bits();$('decimal').textContent='('+val()+')';$('pulseCount').textContent=s.pulse;
+   for(let i=0;i<3;i++){let e=$('q'+i);e.textContent=s.q[i];e.classList.toggle('on',s.q[i]===1);}
+   color('netQ0',s.q[0]);color('netQ1',s.q[1]);color('netQ2',s.q[2]);
+   color('nandInputQ0',s.q[0]);color('nandInputQ2',s.q[2]);
+   let y=Number(!(s.q[2]&&s.q[0]));
+   $('nandA').textContent=s.q[2];$('nandB').textContent=s.q[0];$('nandOut').textContent=y;
+   color('netNand',y,s.flash?'reset':'');color('clearBus',y,s.flash?'reset':'');
+   $('trail').innerHTML=s.history.slice(-13).map((v,i,a)=>(i===a.length-1?'<strong>':'')+v.toString(2).padStart(3,'0')+(i===a.length-1?'</strong>':'')).join(' → ');
+   drawWave();
+ }
+ function stopAuto(){s.run=false;clearTimeout(s.autotimer);s.autotimer=null;autoButton.textContent='▶ Otomatis';}
+ function reset(){s.runid++;stopAuto();s.q=[0,0,0];s.pulse=0;s.history=[0];s.busy=false;s.flash=false;pulseButton.disabled=false;$('clkWire').classList.remove('clocking');$('message').textContent='Reset manual: Q₂Q₁Q₀ = 000.';paint();}
+ async function tick(){
+   if(s.busy)return;
+   const ticket=s.runid;s.busy=true;pulseButton.disabled=true;s.pulse++;
+   const sleep=async ms=>{await delay(ms);return ticket===s.runid};
+   $('clkWire').classList.add('clocking');
+   const old0=s.q[0];s.q[0]^=1;
+   $('message').textContent='FF0 toggle → Q₀ = '+s.q[0];paint();
+   if(!await sleep(175))return;
+   if(old0===1){let old1=s.q[1];s.q[1]^=1;$('message').textContent='Q₀ turun → FF1 toggle → Q₁ = '+s.q[1];paint();if(!await sleep(175))return;
+     if(old1===1){s.q[2]^=1;$('message').textContent='Q₁ turun → FF2 toggle → Q₂ = '+s.q[2];paint();if(!await sleep(175))return;}
+   }
+   if(s.q[2]===1&&s.q[0]===1){
+     s.flash=true;$('message').textContent='101 terdeteksi → NAND = 0 → CLEAR aktif';paint();
+     if(!await sleep(450))return;
+     s.q=[0,0,0];s.flash=false;$('message').textContent='RESET OTOMATIS: Q₂Q₁Q₀ kembali 000 (bukan 111).';
+   }else{$('message').textContent='Pulsa '+s.pulse+': hitungan '+val()+' ('+bits()+').';}
+   s.history.push(val());
+   $('clkWire').classList.remove('clocking');s.busy=false;pulseButton.disabled=s.run;paint();
+   if(s.run&&ticket===s.runid)s.autotimer=setTimeout(tick,570);
+ }
+ pulseButton.addEventListener('click',tick);
+ autoButton.addEventListener('click',()=>{if(s.run){stopAuto();if(!s.busy)pulseButton.disabled=false;return;}s.run=true;autoButton.textContent='Ⅱ Jeda';if(!s.busy)tick();});
+ $('reset').addEventListener('click',reset);
+ function drawWave(){
+   // Time-domain schematic: latest 10 steady-state input pulses, plus the starting point.
+   const history=s.history.slice(-11),svg=$('wave');const w=760,h=100,left=94,right=743;
+   svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+   const count=Math.max(history.length-1,1),unit=(right-left)/Math.max(10,count);
+   let content='';
+   const name=['Clock','Q₀','Q₁','Q₂'];
+   const ys=[13,36,59,82];
+   for(let i=0;i<4;i++){
+     let y=ys[i],d='',state=i===0?0:((history[0]>>(i-1))&1);
+     content+=`<text x="82" y="${y+4}" text-anchor="end" font-size="12" font-weight="750" fill="#587383">${name[i]}</text>`;
+     let top=y-6,bot=y+5;d=`M${left} ${state?top:bot}`;
+     for(let k=1;k<history.length;k++){let x=left+k*unit,prior=state;state=i===0?k%2:((history[k]>>(i-1))&1);d+=` H${x}`;if(prior!==state)d+=` V${state?top:bot}`;}
+     content+=`<path d="${d}" fill="none" stroke="${['#778f9d','#0aa57b','#267ab7','#cf8d21'][i]}" stroke-width="2.7" stroke-linejoin="round"/>`;
+   }
+   for(let k=0;k<history.length;k++){let x=left+k*unit;content+=`<text x="${x}" y="98" text-anchor="middle" font-size="10" fill="#6c8190">${history[k].toString(2).padStart(3,'0')}</text>`;}
+   svg.innerHTML=content;
+ }
+ paint();
+})();
+</script>
+</body>
+</html>
